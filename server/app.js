@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-let userRouter = require("./routes/users");
+let articles = require("./routes/articles");
 const models = require("./models/index");
 const redis = require('redis');
 const PORT = process.env.PORT;
@@ -16,6 +16,6 @@ app.get('/health',async (req,res)=>{
 })
 
 
-app.use('/article', userRouter)
+app.use('/article', articles)
 
 app.listen(PORT, () => { console.log("NODE PG Listening on Port ", PORT) })

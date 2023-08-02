@@ -6,9 +6,11 @@ const redis = require("../redis");
 const getAllArticle = async(req, res) => {
     try{
         const query = req.params.query;
-        console.log("query :: ",query);
         let redisResponse = await redis.cache.hget("pairs", query);
         if(!redisResponse){
+             /**
+             * Serving data from DB
+             */
             let response = await models.article.findAll({
                 where: {
                     title: {
@@ -18,6 +20,9 @@ const getAllArticle = async(req, res) => {
                 raw: true
             })
            
+             /**
+             * Adding searched keyword and it's response in redis.
+             */
             await redis.cache.hset("pairs", query, JSON.stringify(response));
             res.status(200).send({
                 success : true,
@@ -27,6 +32,9 @@ const getAllArticle = async(req, res) => {
             });
 
         }else{
+             /**
+             * Serving data from redis
+             */
             res.status(200).send({
                 success : true,
                 data : JSON.parse(redisResponse),
@@ -34,9 +42,6 @@ const getAllArticle = async(req, res) => {
                 cached: true
             });
         }
-       
-        
-     
     }catch(e){
         res.status(500).send({
             success : false,
@@ -48,7 +53,18 @@ const getAllArticle = async(req, res) => {
 const postArticle = async(req, res) => {
     try{
         const body = req.body;
-        console.log("body :: ",body)
+        if(!req.body.title) throw new Error("title is mandatory");
+        if(!req.body.description) throw new Error("description is mandatory");
+        /**
+         * clearing all the redis keys
+         */
+        let redisKeys = await redis.cache.hkeys("pairs");
+        if (redisKeys.length > 0) {
+            for (let key of redisKeys) {
+                await redis.cache.hdel("pairs", key);
+            }
+        }
+
         let response = await models.article.create({
             title: body.title,
             description: body.description
