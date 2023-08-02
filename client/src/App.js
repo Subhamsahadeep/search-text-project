@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState,useRef } from 'react';
 import axios from 'axios';
 import './App.css';
 
@@ -9,25 +9,13 @@ function App() {
   const [res, setRes] = useState([]);
   const [message, setMessage] = useState('');
   const [getmessage, setGetmessage] = useState('');
-  const titleRef = useRef(null);
-  const desRef = useRef(null);
-
-  useEffect(() => {
-    console.log(titleRef.current?.value);
-    // let ti = titleRef.current.value;
-    // ti.replaceAll(keyword,<span className="yellow">${keyword}</span>);
-
-    // let di = desRef.current.value;
-    // di.replaceAll(keyword,<span className="yellow">${keyword}</span>);
-
-  },[res])
+  const oldKeyword = useRef(null);
 
   const addKeyword = async () => {
     try {
       const response = await axios.post('http://localhost:8000/article/add', {
         title, description
       });
-      console.log(response.data);
       setMessage(response.data.message);
       setTimeout(() => setMessage(), 2000);
       setTitle('');
@@ -42,12 +30,13 @@ function App() {
     try {
       const response = await axios.get(`http://localhost:8000/article/get/${keyword}`);
       let resp = response.data.data;
-      resp.map(el => {
+      resp.map((el) => {
         el.title = el.title.split(" ")
         el.description = el.description.split(" ")
+        return el;
       })
-      console.log("resp : ", resp)
       setRes(resp);
+      oldKeyword.current = keyword;
 
     }
     catch (e) {
@@ -85,11 +74,11 @@ function App() {
       <div className="card">
       <h4> {res.length} posts found</h4>
       
-      {res.map((el) => (
-        <div className="m-t-10 text-align-left ">
+      {res.map((el,index) => (
+        <div key={index} className="m-t-10 text-align-left ">
           <div className="flex flex-wrap"> {
             el.title.map(word => (
-              <div className={`bold m-r-5 ${word.toLowerCase().includes(keyword.toLowerCase()) ? "active" : ""}`}>
+              <div className={`bold m-r-5 ${word.toLowerCase().includes(oldKeyword.current.toLowerCase()) ? "active" : ""}`}>
                 {word}
               </div>
             ))
@@ -97,7 +86,7 @@ function App() {
           </div>
           <div className="color-gray flex flex-wrap m-t-5"> {
             el.description.map(word => (
-              <div className={`m-r-5 ${word.toLowerCase() === keyword.toLowerCase() ? "active" : ""}`}>
+              <div className={`m-r-5 ${word.toLowerCase().includes(oldKeyword.current.toLowerCase()) ? "active" : ""}`}>
                 {word}
               </div>
             ))
