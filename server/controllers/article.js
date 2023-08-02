@@ -1,17 +1,42 @@
+const { response } = require("express");
 const models = require("../models/index");
+const { Op } = require("sequelize");
+const redis = require("../redis");
 
 const getAllArticle = async(req, res) => {
     try{
         const query = req.params.query;
-        console.log("query :: ",query)
-        let response = await models.article.findAll({
-            raw: true
-        })
-        res.status(200).send({
-            success : true,
-            data : response,
-            query: query
-        });
+        console.log("query :: ",query);
+        let redisResponse = await redis.cache.hget("pairs", query);
+        if(!redisResponse){
+            let response = await models.article.findAll({
+                where: {
+                    title: {
+                        [Op.iLike]: `%${query}%`,                    
+                    }
+                },
+                raw: true
+            })
+           
+            await redis.cache.hset("pairs", query, JSON.stringify(response));
+            res.status(200).send({
+                success : true,
+                data : response,
+                query: query,
+                cached: false
+            });
+
+        }else{
+            res.status(200).send({
+                success : true,
+                data : JSON.parse(redisResponse),
+                query: query,
+                cached: true
+            });
+        }
+       
+        
+     
     }catch(e){
         res.status(500).send({
             success : false,
