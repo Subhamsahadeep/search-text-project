@@ -1,3 +1,5 @@
+Node version :  v18.16.1
+
 In Client Folder we have the React APP.
 For running it please type the following commands in terminal ::
 
